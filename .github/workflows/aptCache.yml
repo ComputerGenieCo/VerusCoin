@@ -29,7 +29,8 @@ jobs:
       run: |
         sudo apt-get update
         xargs sudo apt-get install -y < apt-requirements.txt
-        sudo update-alternatives --display x86_64-w64-mingw32-g++
+        sudo update-alternatives --install /usr/bin/x86_64-w64-mingw32-g++ x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix 100
+        sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
 
     - name: Change ownership of APT cache
       run: sudo chown -R $USER:$USER /var/cache/apt
