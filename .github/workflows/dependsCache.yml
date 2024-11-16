@@ -2,13 +2,16 @@ name: Build and Cache Dependencies
 
 on:
   workflow_dispatch:
-
-env:
-  RUN_JOB1: false  # Set this to 'false' to disable the job
+    inputs:
+      run-job1:
+        description: 'Run job1'
+        required: true
+        default: 'false'
+        type: string
 
 jobs:
   linux-build:
-    if: ${{ env.RUN_JOB1 == 'true' }}
+    if: ${{ github.event.inputs.run-job1 == 'true' }}
     name: Linux Depends Build Cache
     runs-on: ubuntu-latest
     steps:
