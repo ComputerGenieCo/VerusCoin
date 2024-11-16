@@ -58,6 +58,14 @@ jobs:
             ${{ runner.os }}-apt-${{ hashFiles('apt-requirements.txt') }}
             ${{ runner.os }}-apt-
 
+      - name: Set x86_64-w64-mingw32-g++-posix as default
+        run: |
+          sudo update-alternatives --install /usr/bin/x86_64-w64-mingw32-g++ x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix 100
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+      - name: Verify installation
+        run: |
+          x86_64-w64-mingw32-g++ --version
+      
       - name: Set up depends cache
         id: cache
         uses: actions/cache@v4
@@ -67,4 +75,7 @@ jobs:
 
       - name: Run Make
         run: |
+          export PATH=/usr/local/gcc-mingw/bin:$PATH
+          g++-mingw-w64-x86-64-posix --version
+          gcc-mingw-w64-x86-64-posix --version
           cd depends/ && make HOST=x86_64-w64-mingw32 V=1 NO_QT=1
