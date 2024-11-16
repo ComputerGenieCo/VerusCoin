@@ -29,6 +29,7 @@ jobs:
       run: |
         sudo apt-get update
         xargs sudo apt-get install -y < apt-requirements.txt
+        sudo update-alternatives --display x86_64-w64-mingw32-g++
 
     - name: Change ownership of APT cache
       run: sudo chown -R $USER:$USER /var/cache/apt
