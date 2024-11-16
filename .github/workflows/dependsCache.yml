@@ -5,6 +5,7 @@ on:
 
 jobs:
   linux-build:
+    if: env.RUN_JOB1 == 'true'
     name: Linux Depends Build Cache
     runs-on: ubuntu-latest
     steps:
@@ -68,6 +69,10 @@ jobs:
       - name: Run Make
         run: |
           export PATH=/usr/local/gcc-mingw/bin:$PATH
+          sudo update-alternatives --install /usr/bin/x86_64-w64-mingw32-g++ x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix 100
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+          sudo update-alternatives --install /usr/bin/x86_64-w64-mingw32-gcc x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix 100
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
           g++-mingw-w64-x86-64-posix --version
           gcc-mingw-w64-x86-64-posix --version
           cd depends/ && make HOST=x86_64-w64-mingw32 V=1 NO_QT=1
