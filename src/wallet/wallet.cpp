@@ -44,6 +44,8 @@
 using namespace std;
 using namespace libzcash;
 
+unsigned int WITNESS_CACHE_SIZE = COINBASE_MATURITY + 10;
+
 /**
  * Settings
  */
@@ -4955,8 +4957,12 @@ std::vector<uint256> CWallet::ResendWalletTransactionsBefore(int64_t nTime)
         if ( item.second != 0 )
         {
             CWalletTx &wtx = *item.second;
-            if (wtx.RelayWalletTransaction())
-                result.push_back(wtx.GetHash());
+            uint32_t curHeight = chainActive.Height();
+            if (!IsExpiredTx(wtx, curHeight + 1))
+            {
+                if (wtx.RelayWalletTransaction())
+                    result.push_back(wtx.GetHash());
+            }
         }
     }
     for (auto hash : vwtxh)
@@ -8355,8 +8361,6 @@ int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet) const
 
 int CMerkleTx::GetBlocksToMaturity() const
 {
-    if ( ASSETCHAINS_SYMBOL[0] == 0 )
-        COINBASE_MATURITY = _COINBASE_MATURITY;
     if (!IsCoinBase())
         return 0;
     int32_t depth = GetDepthInMainChain();

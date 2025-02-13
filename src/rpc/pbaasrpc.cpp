@@ -443,10 +443,38 @@ bool SetThisChain(const UniValue &chainDefinition, CCurrencyDefinition *retDef)
         ASSETCHAINS_ERAOPTIONS[0] = ConnectedChains.ThisChain().ChainOptions();
 
         mapArgs["-blocktime"] = to_string(ConnectedChains.ThisChain().blockTime);
-        mapArgs["-powaveragingwindow"] = to_string(ConnectedChains.ThisChain().powAveragingWindow);
+        if (mapArgs.count("-powaveragingwindow"))
+        {
+            ConnectedChains.ThisChain().powAveragingWindow = stoi(mapArgs["-powaveragingwindow"]);
+        }
+        else
+        {
+            mapArgs["-powaveragingwindow"] = to_string(ConnectedChains.ThisChain().powAveragingWindow);
+        }
         mapArgs["-notarizationperiod"] = to_string(ConnectedChains.ThisChain().blockNotarizationModulo);
     }
 
+    DEFAULT_PRE_BLOSSOM_TX_EXPIRY_DELTA = std::max((uint32_t)CCurrencyDefinition::MIN_DEFAULT_TX_EXPIRY, std::min((uint32_t)CCurrencyDefinition::MAX_DEFAULT_TX_EXPIRY, (uint32_t)((CCurrencyDefinition::MIN_DEFAULT_TX_EXPIRY * CCurrencyDefinition::DEFAULT_BLOCKTIME_TARGET) / ConnectedChains.ThisChain().blockTime)));
+
+    if (ConnectedChains.ThisChain().blockTime < CCurrencyDefinition::DEFAULT_BLOCKTIME_TARGET  && ConnectedChains.Chips777TestnetChainID() != ConnectedChains.ThisChain().GetID()) {
+        COINBASE_MATURITY = std::max(
+            static_cast<uint32_t>(CCurrencyDefinition::MIN_COINBASE_MATURITY),
+            std::min(
+                static_cast<uint32_t>(CCurrencyDefinition::MAX_COINBASE_MATURITY),
+                static_cast<uint32_t>(
+                    (CCurrencyDefinition::MIN_COINBASE_MATURITY * CCurrencyDefinition::DEFAULT_BLOCKTIME_TARGET) /
+                    ConnectedChains.ThisChain().blockTime
+                )
+            )
+        );
+    }
+    else
+    {
+        COINBASE_MATURITY = static_cast<uint32_t>(CCurrencyDefinition::MIN_COINBASE_MATURITY);
+    }
+
+    WITNESS_CACHE_SIZE = COINBASE_MATURITY + 10;
+    MAX_REORG_LENGTH = COINBASE_MATURITY - 1;
     auto numEras = ConnectedChains.ThisChain().rewards.size();
     ASSETCHAINS_LASTERA = numEras - 1;
     mapArgs["-ac_eras"] = to_string(numEras);
@@ -11259,18 +11287,35 @@ UniValue sendcurrency(const UniValue& params, bool fHelp)
                     throw JSONRPCError(RPC_INVALID_PARAMETER, "Memo is only an option for z-address destinations.");
                 }
 
+                /*
+                // throwing an error if a destination ID is not present on the current chain when sending to an ID on another chain
+                // may sometimes be inconvenient, but it also helps ensure that a fat finger error won't lose funds. The alternate way,
+                // which does not throw an error is in this comment, if desired.
+                CTxDestination destination;
+
+                if (destSystemID != thisChainID || (!exportToCurrencyID.IsNull() && exportToCurrencyID != thisChainID))
+                {
+                    destination = DecodeDestination(destStr);
+                }
+                else
+                {
+                    destination = ValidateDestination(destStr);
+                }
+                */
+
+                // if enabling the alternate to strict verification of ID on this chain when sending at all times, comment this and uncomment above
                 CTxDestination destination = ValidateDestination(destStr);
 
                 CTxDestination refundDestination = DecodeDestination(refundToStr);
                 if (refundDestination.which() == COptCCParams::ADDRTYPE_INVALID)
                 {
-                    if (!VERUS_DEFAULTID.IsNull())
-                    {
-                        refundDestination = VERUS_DEFAULTID;
-                    }
-                    else if (!hasZSource && !wildCardAddress && sourceDest.which() != COptCCParams::ADDRTYPE_INVALID)
+                    if (!hasZSource && !wildCardAddress && sourceDest.which() != COptCCParams::ADDRTYPE_INVALID)
                     {
                         refundDestination = sourceDest;
+                    }
+                    else if (!VERUS_DEFAULTID.IsNull())
+                    {
+                        refundDestination = VERUS_DEFAULTID;
                     }
                     else
                     {
@@ -11282,7 +11327,7 @@ UniValue sendcurrency(const UniValue& params, bool fHelp)
                 {
                     if (!CIdentity::LookupIdentity(GetDestinationID(refundDestination)).IsValid())
                     {
-                        throw JSONRPCError(RPC_INVALID_PARAMETER, "When refunding to an ID, the ID must be valid.");
+                        throw JSONRPCError(RPC_INVALID_PARAMETER, "When explicitly refunding to an ID, the ID must be valid on the current chain.");
                     }
                 }
 
@@ -15731,7 +15776,7 @@ UniValue updateidentity(const UniValue& params, bool fHelp)
     {
         if (!oldID.HasTokenizedControl())
         {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Can only used ID control token for ID that has tokenized ID control on this chain");
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Can only use ID control token for ID that has tokenized ID control on this chain");
         }
     }
 
@@ -16422,6 +16467,11 @@ UniValue recoveridentity(const UniValue& params, bool fHelp)
     if (!(oldID = CIdentity::LookupIdentity(newIDID, 0, &idHeight, &idTxIn)).IsValid())
     {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "ID not found " + newID.ToUniValue().write());
+    }
+
+    if (find_value(newUniIdentity, "systemid").isNull())
+    {
+        newID.systemID = oldID.systemID;
     }
 
     if (!oldID.IsRevoked())

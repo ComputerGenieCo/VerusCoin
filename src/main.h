@@ -56,7 +56,6 @@ class PrecomputedTransactionData;
 
 struct CNodeStateStats;
 #define DEFAULT_MEMPOOL_EXPIRY 1
-#define _COINBASE_MATURITY 100
 
 /** Default for -blockmaxsize and -blockminsize, which control the range of sizes the mining code will create **/
 static const unsigned int DEFAULT_BLOCK_MAX_SIZE = MAX_BLOCK_SIZE;
@@ -68,7 +67,7 @@ static const bool DEFAULT_ALERTS = true;
 /** Minimum alert priority for enabling safe mode. */
 static const int ALERT_PRIORITY_SAFE_MODE = 4000;
 /** Maximum reorg length we will accept before we shut down and alert the user. */
-static const unsigned int MAX_REORG_LENGTH = _COINBASE_MATURITY - 1;
+extern unsigned int MAX_REORG_LENGTH;
 /** Maximum number of signature check operations in an IsStandard() P2SH script */
 static const unsigned int MAX_P2SH_SIGOPS = 15;
 /** The maximum number of sigops we're willing to relay/mine in a single tx */
@@ -82,8 +81,8 @@ static const int64_t ORPHAN_TX_EXPIRE_TIME = 20 * 60;
 /** Minimum time between orphan transactions expire time checks in seconds */
 static const int64_t ORPHAN_TX_EXPIRE_INTERVAL = 5 * 60;
 /** Default for -txexpirydelta, in number of blocks */
-static const unsigned int DEFAULT_PRE_BLOSSOM_TX_EXPIRY_DELTA = 20;
-static const unsigned int DEFAULT_POST_BLOSSOM_TX_EXPIRY_DELTA = DEFAULT_PRE_BLOSSOM_TX_EXPIRY_DELTA * Consensus::BLOSSOM_POW_TARGET_SPACING_RATIO;
+extern unsigned int DEFAULT_PRE_BLOSSOM_TX_EXPIRY_DELTA;
+static const unsigned int DEFAULT_POST_BLOSSOM_TX_EXPIRY_DELTA = 20 * Consensus::BLOSSOM_POW_TARGET_SPACING_RATIO;
 /** The number of blocks within expiry height when a tx is considered to be expiring soon */
 static constexpr uint32_t TX_EXPIRING_SOON_THRESHOLD = 3;
 /** The maximum size of a blk?????.dat file (since 0.8) */
