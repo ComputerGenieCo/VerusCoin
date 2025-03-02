@@ -57,6 +57,8 @@ static const uint32_t PBAAS_SCHEDULED_PROTOCOL_UPGRADE_01 = 1731002400;
 static const uint32_t PBAAS_SCHEDULED_PROTOCOL_TESTNET_UPGRADE_01 = 1730228400;
 static const uint32_t PBAAS_SCHEDULED_PROTOCOL_UPGRADE_02 = 1732471200; // (GMT): Sunday, November 24, 2024 6:00:00 PM
 static const uint32_t PBAAS_SCHEDULED_PROTOCOL_TESTNET_UPGRADE_02 = 1731373200; // (GMT): Tuesday, November 12, 2024 1:00:00 AM
+static const uint32_t PBAAS_LAUNCH_REFUND_FIX_UPGRADE = 1740679200; // GMT: Thursday, Feb 27, 2025 6:00:00 PM
+static const uint32_t PBAAS_LAUNCH_REFUND_FIX_TESTNET_UPGRADE_02 = 1740679200; // GMT: Thursday, Feb 27, 2025 6:00:00 PM
 
 class CUpgradeDescriptor
 {
@@ -1236,6 +1238,7 @@ public:
     bool vARRRUpdateEnabled(uint32_t height) const;
     uint160 vARRRChainID() const;
     uint160 vDEXChainID() const;
+    uint160 KaijuCurrencyID() const;
     uint160 Chips777TestnetChainID() const;
     bool ForceIdentityUpgrade(uint32_t height) const;
     bool ForceIdentityUnlock(uint32_t height) const;
@@ -1250,6 +1253,7 @@ public:
     int CheckPastRealTime(uint32_t nTime, int64_t height=0) const;
     bool IsUpgrade01Active(int64_t height=0) const;
     bool IsUpgrade02Active(int64_t height=0) const;
+    bool IsPBaaSRefundFixActive(int64_t height=0) const;
 
     uint32_t GetChainBranchId(const uint160 &sysID, int nHeight, const Consensus::Params& params) const;
 

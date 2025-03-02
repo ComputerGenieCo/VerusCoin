@@ -6589,6 +6589,12 @@ uint160 CConnectedChains::vARRRChainID() const
     return vARRRID;
 }
 
+uint160 CConnectedChains::KaijuCurrencyID() const
+{
+    static uint160 KaijuID = GetDestinationID(DecodeDestination("Kaiju@"));
+    return KaijuID;
+}
+
 uint160 CConnectedChains::vDEXChainID() const
 {
     static uint160 vARRRID = GetDestinationID(DecodeDestination("vDEX@"));
@@ -6777,6 +6783,11 @@ bool CConnectedChains::IsUpgrade01Active(int64_t height) const
 bool CConnectedChains::IsUpgrade02Active(int64_t height) const
 {
     return CheckPastRealTime(PBAAS_TESTMODE ? PBAAS_SCHEDULED_PROTOCOL_TESTNET_UPGRADE_02 : PBAAS_SCHEDULED_PROTOCOL_UPGRADE_02, height) == 1;
+}
+
+bool CConnectedChains::IsPBaaSRefundFixActive(int64_t height) const
+{
+    return CheckPastRealTime(PBAAS_TESTMODE ? PBAAS_LAUNCH_REFUND_FIX_TESTNET_UPGRADE_02 : PBAAS_LAUNCH_REFUND_FIX_UPGRADE, height) == 1;
 }
 
 uint32_t CConnectedChains::GetChainBranchId(const uint160 &sysID, int height, const Consensus::Params& params) const
