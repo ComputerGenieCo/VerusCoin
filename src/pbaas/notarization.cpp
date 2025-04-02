@@ -3705,8 +3705,12 @@ CPBaaSNotarization IsValidPrimaryChainEvidence(const CCurrencyDefinition &extern
                         int heightChange = futureProofRoot.rootHeight -
                                             lastNotarization.proofRoots[lastNotarization.currencyID].rootHeight;
                         numExpectedCheckpoints = CPBaaSNotarization::GetNumCheckpoints(heightChange);
+                        blocksPerCheckpoint = CPBaaSNotarization::GetBlocksPerCheckpoint(heightChange);
                         validBasicEvidence = !challengeProofRoot.IsValid();
-                        proofState = validBasicEvidence ? EXPECT_NOTHING : EXPECT_COMMITMENT_PROOF;
+                        if (validBasicEvidence)
+                        {
+                            proofState = EXPECT_NOTHING;
+                        }
                     }
                     else
                     {
@@ -3797,7 +3801,7 @@ CPBaaSNotarization IsValidPrimaryChainEvidence(const CCurrencyDefinition &extern
                     }
                     else
                     {
-                        validBasicEvidence = (lastLocalNotarization.IsValid() && lastLocalNotarization.IsPreLaunch()) || !challengeProofRoot.IsValid();
+                        validBasicEvidence = (lastLocalNotarization.IsValid() && (lastLocalNotarization.IsPreLaunch() || validateEarned)) || !challengeProofRoot.IsValid();
                         proofState = validBasicEvidence ? EXPECT_NOTHING : EXPECT_COMMITMENT_PROOF;
                     }
                 }
@@ -3818,7 +3822,8 @@ CPBaaSNotarization IsValidPrimaryChainEvidence(const CCurrencyDefinition &extern
                         checkpointRoots.push_back(oneCheckpoint);
                         if (numCheckpointsFound == numExpectedCheckpoints)
                         {
-                            validBasicEvidence = (lastLocalNotarization.IsValid() && lastLocalNotarization.IsPreLaunch()) || !challengeProofRoot.IsValid();
+                            validChallengeEvidence = ConnectedChains.IsPBaaSNotarizationFix01Active(height) && validateEarned && challengeProofRoot.IsValid() && challengeProofRoot.systemID == externalSystemID;
+                            validBasicEvidence = (lastLocalNotarization.IsValid() && lastLocalNotarization.IsPreLaunch()) || !challengeProofRoot.IsValid() || validChallengeEvidence;
                             proofState = validBasicEvidence ? EXPECT_NOTHING : EXPECT_COMMITMENT_PROOF;
                         }
                         else
@@ -4470,6 +4475,7 @@ std::tuple<uint32_t, CUTXORef, CPBaaSNotarization> GetLastConfirmedNotarization(
                          oneFinalization.first == 0 ||
                          firstUnspentFinalization.first < oneFinalization.first))
                     {
+                        targetBlockHash.SetNull();
                         if (checkP.evalCode == EVAL_FINALIZE_NOTARIZATION &&
                             (!((ofCandidate = CObjectFinalization(checkP.vData[0])).IsValid() &&
                                ofCandidate.output.GetOutputTransaction(targetTx, targetBlockHash, true)) ||
@@ -11487,6 +11493,10 @@ bool PreCheckFinalizeNotarization(const CTransaction &tx, int32_t outNum, CValid
     auto lastConfirmedNotarizationInfo = GetLastConfirmedNotarization(curID, height - 1);
     if (!std::get<0>(lastConfirmedNotarizationInfo))
     {
+        if (LogAcceptCategory("notarization"))
+        {
+            lastConfirmedNotarizationInfo = GetLastConfirmedNotarization(curID, height - 1);
+        }
         return state.Error("Unable to get last confirmed notarization");
     }
 
