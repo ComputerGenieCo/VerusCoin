@@ -8,6 +8,7 @@
 
 #include <string>
 #include <cstdint>
+
 #define WHITELIST_COUNT 704
 
 extern const char *whitelist_ids[WHITELIST_COUNT];

@@ -6698,9 +6698,12 @@ UniValue getcurrencyconverters(const UniValue& params, bool fHelp)
     // get all currencies that contain all specified reserves in our fractionalsFound set
     // use latest notarizations of the currencies to do so
     std::vector<CAddressUnspentDbEntry> activeFractionals;
+    {
+        LOCK(cs_main);
+        activeFractionals = GetFractionalNotarizationsForReserve(toCurID);
+    }
     std::set<int32_t> toRemove;
-    if ((activeFractionals = GetFractionalNotarizationsForReserve(toCurID)).size() &&
-        reserves.size())
+    if (activeFractionals.size() && reserves.size())
     {
         auto resIt = reserves.begin();
         for (int i = 0; i < activeFractionals.size(); i++)
@@ -6752,7 +6755,11 @@ UniValue getcurrencyconverters(const UniValue& params, bool fHelp)
         }
     }
 
-    CCoinbaseCurrencyState toState = ConnectedChains.GetCurrencyState(toCurID, chainActive.Height(), true);
+    CCoinbaseCurrencyState toState;
+    {
+        LOCK(cs_main);
+        toState = ConnectedChains.GetCurrencyState(toCurID, chainActive.Height(), true);
+    }
     if (toCurrencyDef.systemID == ASSETCHAINS_CHAINID && !(toState.IsValid() && toState.IsLaunchConfirmed()))
     {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot get converters for pre-launch or refunded currency " + EncodeDestination(CIdentityID(toCurID)));
@@ -6787,6 +6794,7 @@ UniValue getcurrencyconverters(const UniValue& params, bool fHelp)
     // if any reserve currency is fractional and contains tuCurrency and other reserves to check, add it as well
     for (auto &oneReserve : reserves)
     {
+        LOCK(cs_main);
         if (oneReserve.second.first.IsFractional())
         {
             CCoinbaseCurrencyState oneState = ConnectedChains.GetCurrencyState(oneReserve.first, chainActive.Height(), true);
@@ -6832,6 +6840,7 @@ UniValue getcurrencyconverters(const UniValue& params, bool fHelp)
 
     for (int i = 0; i < activeFractionals.size(); i++)
     {
+        LOCK(cs_main);
         CPBaaSNotarization pbn(activeFractionals[i].second.script);
         CCurrencyDefinition oneCur;
         // if we already have it, move on
@@ -6863,6 +6872,7 @@ UniValue getcurrencyconverters(const UniValue& params, bool fHelp)
     {
         for (auto &oneConverter : converterCurrencyOptions)
         {
+            LOCK(cs_main);
             // only include currencies on the current chain
             if (std::get<0>((oneConverter.second)).systemID != ASSETCHAINS_CHAINID)
             {
@@ -8130,16 +8140,19 @@ UniValue makeoffer(const UniValue& params, bool fHelp)
 
                 preTx = preResult.GetTxOrThrow();
 
-                bool relayTx;
+                bool relayTx = false;
                 CValidationState state;
                 {
                     LOCK2(smartTransactionCS, mempool.cs);
-                    relayTx = myAddtomempool(preTx, &state);
+                    relayTx = relayTx ? false : myAddtomempool(preTx, &state);
                 }
 
                 if (!relayTx)
                 {
-                    throw JSONRPCError(RPC_TRANSACTION_REJECTED, "Unable to prepare offer tx for identity: " + state.GetRejectReason());
+                    UniValue jsonTx(UniValue::VOBJ);
+                    extern void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry);
+                    TxToUniv(preTx, uint256(), jsonTx);
+                    throw JSONRPCError(RPC_TRANSACTION_REJECTED, "Unable to relay offer tx for identity: " + state.GetRejectReason() + "\n" + jsonTx.write(1,2));
                 }
                 else
                 {
@@ -8403,6 +8416,16 @@ UniValue makeoffer(const UniValue& params, bool fHelp)
         // now, the offer tx is complete, and we need to sign its input with SIGHASH_SINGLE
         auto consensusBranchId = CurrentEpochBranchId(height, Params().consensus);
 
+        bool showOffer = false;
+        if (showOffer)
+        {
+            CValidationState state;
+            UniValue jsonTx(UniValue::VOBJ);
+            extern void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry);
+            TxToUniv(preTx, uint256(), jsonTx);
+            printf("Offer transaction being posted: %s\n", jsonTx.write(1,2).c_str());
+        }
+
         if (offerTx.vShieldedOutput.size())
         {
             // has for SIGHASH_SINGLE | SIGHASH_ANYONECANPAY binding signature for
@@ -8473,6 +8496,11 @@ UniValue makeoffer(const UniValue& params, bool fHelp)
                 throw JSONRPCError(RPC_TRANSACTION_ERROR, "Unable to make offer transaction on chain, try with returnhex as false");
             }
             TransactionBuilder tb(Params().consensus, height + 1, pwalletMain);
+
+            // set expiry of the transaction holding the actual offer to max one day out and not more than the offer is valid
+            uint32_t oneDayInBlocks = chainActive.Height() + (86400 / ConnectedChains.ThisChain().blockTime);
+            tb.SetExpiryHeight(offerTx.nExpiryHeight > oneDayInBlocks ? oneDayInBlocks : offerTx.nExpiryHeight);
+
             for (auto &oneIn : postedOfferIns)
             {
                 tb.AddTransparentInput(COutPoint(oneIn.txIn.prevout.hash, oneIn.txIn.prevout.n), oneIn.scriptPubKey, oneIn.nValue);
@@ -12220,7 +12248,7 @@ UniValue sendcurrency(const UniValue& params, bool fHelp)
             totalOutput += get<3>(oneOut).ReserveOutValue();
             if (get<1>(oneOut))
             {
-                totalOutput.valueMap[ASSETCHAINS_CHAINID] = get<1>(oneOut);
+                totalOutput.valueMap[ASSETCHAINS_CHAINID] += get<1>(oneOut);
             }
         }
         returnTxUni.pushKV("outputtotals", totalOutput.ToUniValue());
@@ -12755,7 +12783,7 @@ UniValue getcurrencystate(const UniValue& params, bool fHelp)
         }
         UniValue entry(UniValue::VOBJ);
         entry.push_back(Pair("height", i));
-        entry.push_back(Pair("blocktime", (uint64_t)chainActive.LastTip()->nTime));
+        entry.push_back(Pair("blocktime", importIt->first.second <= chainActive.Height() ? (uint64_t)(chainActive[importIt->first.second]->nTime) : (uint64_t)(chainActive.LastTip()->nTime)));
         entry.push_back(Pair("currencystate", currencyState.ToUniValue()));
 
         if (pairVolumePrice.size())
@@ -16027,7 +16055,7 @@ UniValue updateidentity(const UniValue& params, bool fHelp)
     }
 
     // if fee offer was not specified, calculate
-    if (!feeOffer)
+    if (!feeOffer && !returnTx)
     {
         // calculate total fee required to update based on content in content maps
         // as of PBaaS, standard contentMaps cost an extra standard fee per entry
@@ -16071,7 +16099,7 @@ UniValue updateidentity(const UniValue& params, bool fHelp)
             success = true;
         }
     }
-    else
+    else if (feeOffer)
     {
         success = find_utxos(from_taddress, vCoins) &&
                 pwalletMain->SelectCoinsMinConf(feeOffer, 0, 0, vCoins, setCoinsRet, totalFound);
