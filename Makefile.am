@@ -105,16 +105,7 @@ baseline_filtered.info: baseline.info
 	$(LCOV) -r $< $(LCOV_EXCLUDE_PATTERNS) -o $@
 else
 baseline_filtered.info: baseline.info
-	$(LCOV) -r $< "/usr/include/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/*.h" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/boost/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/gmock/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/gtest/*" \
-	"$(abs_builddir)/src/gtest/*" \
-	"$(abs_builddir)/src/test/*" \
-	"$(abs_builddir)/src/wallet/gtest/*" \
-	"$(abs_builddir)/src/wallet/test/*" \
-	-o $@
+	$(LCOV) -r $< $(LCOV_EXCLUDE_PATTERNS) -o $@
 endif
 
 leveldb_baseline.info: baseline_filtered.info
@@ -125,16 +116,7 @@ leveldb_baseline_filtered.info: leveldb_baseline.info
 	$(LCOV) -r $< $(LCOV_EXCLUDE_PATTERNS) -o $@
 else
 leveldb_baseline_filtered.info: leveldb_baseline.info
-	$(LCOV) -r $< "/usr/include/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/*.h" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/boost/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/gmock/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/gtest/*" \
-	"$(abs_builddir)/src/gtest/*" \
-	"$(abs_builddir)/src/test/*" \
-	"$(abs_builddir)/src/wallet/gtest/*" \
-	"$(abs_builddir)/src/wallet/test/*" \
-	-o $@
+	$(LCOV) -r $< $(LCOV_EXCLUDE_PATTERNS) -o $@
 endif
 
 baseline_filtered_combined.info: leveldb_baseline_filtered.info baseline_filtered.info
@@ -151,16 +133,7 @@ test_bitcoin_filtered.info: test_bitcoin.info
 	$(LCOV) -r $< $(LCOV_EXCLUDE_PATTERNS) -o $@
 else
 test_bitcoin_filtered.info: test_bitcoin.info
-	$(LCOV) -r $< "/usr/include/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/*.h" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/boost/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/gmock/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/gtest/*" \
-	"$(abs_builddir)/src/gtest/*" \
-	"$(abs_builddir)/src/test/*" \
-	"$(abs_builddir)/src/wallet/gtest/*" \
-	"$(abs_builddir)/src/wallet/test/*" \
-	-o $@
+	$(LCOV) -r $< $(LCOV_EXCLUDE_PATTERNS) -o $@
 endif
 
 
@@ -176,16 +149,7 @@ block_test_filtered.info: block_test.info
 	$(LCOV) -r $< $(LCOV_EXCLUDE_PATTERNS) -o $@
 else
 block_test_filtered.info: block_test.info
-	$(LCOV) -r $< "/usr/include/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/*.h" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/boost/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/gmock/*" \
-	"$(abs_builddir)/depends/x86_64-pc-linux-gnu/include/gtest/*" \
-	"$(abs_builddir)/src/gtest/*" \
-	"$(abs_builddir)/src/test/*" \
-	"$(abs_builddir)/src/wallet/gtest/*" \
-	"$(abs_builddir)/src/wallet/test/*" \
-	-o $@
+	$(LCOV) -r $< $(LCOV_EXCLUDE_PATTERNS) -o $@
 endif
 
 
