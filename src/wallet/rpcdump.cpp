@@ -1036,6 +1036,10 @@ UniValue z_getencryptionaddress(const UniValue& params, bool fHelp)
     {
         hw << fromID;
     }
+    else
+    {
+        hw << (uint8_t)0;
+    }
     if (!toID.IsNull())
     {
         hw << toID;
@@ -1067,6 +1071,9 @@ UniValue z_getencryptionaddress(const UniValue& params, bool fHelp)
 
     result.pushKV("address", EncodePaymentAddress(xsk.DefaultAddress()));
     result.pushKV("extendedviewingkey", EncodeViewingKey(xsk.ToXFVK()));
+    auto ivk =  xsk.ToXFVK().fvk.in_viewing_key();
+    std::vector<unsigned char> ivkVec = std::vector<unsigned char>(ivk.begin(), ivk.end());
+    result.pushKV("ivk", HexBytes(ivkVec.data(), ivkVec.size()));
     if (returnSecret)
     {
         result.pushKV("extendedspendingkey", EncodeSpendingKey(xsk));
