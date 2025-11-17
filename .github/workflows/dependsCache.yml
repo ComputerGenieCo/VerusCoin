@@ -72,6 +72,11 @@ jobs:
           path: depends/x86_64-w64-mingw32
           key: ${{ runner.os }}-x86_64-w64-mingw32-${{ hashFiles('depends/packages/**') }}
 
+      - name: Install MinGW-w64 cross-compilers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 g++-mingw-w64-x86-64
+
       - name: Run Make
         run: |
           export PATH=/usr/local/gcc-mingw/bin:$PATH
